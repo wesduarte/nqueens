@@ -2,10 +2,10 @@ package main
 
 import (
     "fmt"
+    "time"
+    "math"
     "math/rand"
 )
-
-var board []int
 
 func abs(x int) int {
     if x <0 {
@@ -14,9 +14,13 @@ func abs(x int) int {
     return x
 }
 
+func random(max int) int {
+    return rand.Intn(max)
+}
+
 func initialSolution(n int) []int{
 
-    var board = make([]int, n)
+    board := make([]int, n)
     for i:= 0; i<n; i++ {
         board[i] = i
     }
@@ -41,7 +45,7 @@ func createMatrix(n int) [][]int{
     return matrix
 }
 
-func calculateTemperature(board []int) int {
+func calculateEnergy(board []int) int {
     board_len := len(board)
 
     collisions := 0
@@ -64,6 +68,8 @@ func calculateTemperature(board []int) int {
 
 func generateNewSolution(board []int) []int {
     board_len := len(board)
+    newBoard := make([]int, board_len)
+    copy(newBoard, board)
     x := rand.Intn(board_len)
     y := rand.Intn(board_len)
 
@@ -74,29 +80,49 @@ func generateNewSolution(board []int) []int {
 
 
     fmt.Println("rand", x, y)
-    board[x], board[y] = board[y], board[x]
+    newBoard[x], newBoard[y] = newBoard[y], newBoard[x]
 
-    return board
+    return newBoard
+}
+
+func updateTemperature(t float64) float64{
+    t = 0.99 * t
+    return t
 }
 
 func main() {
+    rand.Seed(time.Now().Unix())
+    board := initialSolution(128)
+    //var temperature float64 = float64(calculateEnergy(board))/0.2
+    var temperature float64 = float64(35)
 
-    board = initialSolution(4)
-
+    fmt.Println(temperature)
     printBoard(board)
 
-    fmt.Println("collisions: ", calculateTemperature(board))
+    fmt.Println("collisions: ", calculateEnergy(board))
 
-    for calculateTemperature(board) > 0 {
+    for calculateEnergy(board) > 0 {
         fmt.Println("Generate New Solution")
 
-        board = generateNewSolution(board)
+        newBoard := generateNewSolution(board)
 
-        printBoard(board)
+        delta := calculateEnergy(board) - calculateEnergy(newBoard)
+        probability := math.Exp(float64(delta)/temperature)
+        randomNumber := rand.Float64()
+        fmt.Println("probability rand ", probability)
+        fmt.Println("float64 rand ", randomNumber)
+        if calculateEnergy(newBoard) < calculateEnergy(board) {
+            board = newBoard
+            printBoard(board)
 
-        fmt.Println("collisions: ", calculateTemperature(board))
-
+            fmt.Println("collisions: ", calculateEnergy(board))
+        } else if(randomNumber <= probability) {
+            board = newBoard
+            printBoard(board)
+        }
+        temperature = updateTemperature(temperature)
     }
 
+    printBoard(board)
 
 }
