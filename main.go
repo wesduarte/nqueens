@@ -22,7 +22,7 @@ func initialSolution(n int) []int{
 
     board := make([]int, n)
     for i:= 0; i<n; i++ {
-        board[i] = i
+        board[i] = rand.Intn(n)
     }
     return board
 }
@@ -34,7 +34,6 @@ func printBoard(board []int) {
         boardMatrix[i][board[i]] = 1
         fmt.Println(boardMatrix[i])
     }
-    //fmt.Println(boardMatrix)
 }
 
 func createMatrix(n int) [][]int{
@@ -45,12 +44,12 @@ func createMatrix(n int) [][]int{
     return matrix
 }
 
-func calculateEnergy(board []int) int {
+func calculateEnergy(board []int) float64 {
     board_len := len(board)
 
-    collisions := 0
+    collisions := 0.0
     for i:=0; i < board_len; i++ {
-        fmt.Println(i, " iteration")
+        //fmt.Println(i, " iteration")
         for j:=i+1; j < board_len; j++ {
             diff := j - i
             //if board[j] == abs(diff - board[i]) || board[j] == abs(diff + board[i]) {
@@ -78,7 +77,6 @@ func generateNewSolution(board []int) []int {
         y = rand.Intn(board_len)
     }
 
-
     fmt.Println("rand", x, y)
     newBoard[x], newBoard[y] = newBoard[y], newBoard[x]
 
@@ -86,43 +84,65 @@ func generateNewSolution(board []int) []int {
 }
 
 func updateTemperature(t float64) float64{
-    t = 0.99 * t
-    return t
+    new_t := 0.8 * t
+    return new_t
 }
 
 func main() {
     rand.Seed(time.Now().Unix())
-    board := initialSolution(128)
-    //var temperature float64 = float64(calculateEnergy(board))/0.2
-    var temperature float64 = float64(35)
+    N := 6
+    board := initialSolution(N)
+    optimal_board := board
+
+    //var temperature float64 = 100.0/float64(N)
+    //var temperature float64 = (float64(N)*99)
+    var temperature float64 = 1000000000
 
     fmt.Println(temperature)
     printBoard(board)
 
-    fmt.Println("collisions: ", calculateEnergy(board))
+    fmt.Println("energy: ", calculateEnergy(board))
 
-    for calculateEnergy(board) > 0 {
-        fmt.Println("Generate New Solution")
+    //L := (N/2)-1
+    L := 1
+    //L := int(temperature) + 3
+    iterations := 0
 
-        newBoard := generateNewSolution(board)
+    for temperature > 0.001 {
+        for i:=0; i<L; i++ {
+            fmt.Println("Generate New Solution")
 
-        delta := calculateEnergy(board) - calculateEnergy(newBoard)
-        probability := math.Exp(float64(delta)/temperature)
-        randomNumber := rand.Float64()
-        fmt.Println("probability rand ", probability)
-        fmt.Println("float64 rand ", randomNumber)
-        if calculateEnergy(newBoard) < calculateEnergy(board) {
-            board = newBoard
-            printBoard(board)
+            newBoard := generateNewSolution(board)
 
-            fmt.Println("collisions: ", calculateEnergy(board))
-        } else if(randomNumber <= probability) {
-            board = newBoard
-            printBoard(board)
+            delta := calculateEnergy(newBoard) - calculateEnergy(board)
+            probability := math.Exp(-delta/temperature)
+            randomNumber := rand.Float64()
+            //fmt.Println("probability rand ", probability)
+            //fmt.Println("float64 rand ", randomNumber)
+            if delta < 0 {
+                board = newBoard
+                //printBoard(board)
+
+                //fmt.Println("collisions: ", calculateEnergy(board))
+                if calculateEnergy(newBoard) < calculateEnergy(optimal_board) {
+                    optimal_board = newBoard
+                }
+            } else if(randomNumber <= probability) {
+                board = newBoard
+                //printBoard(board)
+            }
+            iterations++
         }
         temperature = updateTemperature(temperature)
+        //L = int(temperature) + 3
     }
 
-    printBoard(board)
+    printBoard(optimal_board)
+    fmt.Println("energy: ", calculateEnergy(optimal_board))
+    fmt.Println("temperature: ", temperature)
+    if temperature <= 0.001 {
+        fmt.Printf("underflow temperature: %.10f\n", temperature)
+    }
+    fmt.Println("Total of ", iterations, " iterations")
 
 }
