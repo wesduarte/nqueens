@@ -53,7 +53,7 @@ func calculateEnergy(board []int) float64 {
         for j:=i+1; j < board_len; j++ {
             diff := j - i
             //if board[j] == abs(diff - board[i]) || board[j] == abs(diff + board[i]) {
-            if abs(board[j] - board[i]) == diff {
+            if abs(board[j] - board[i]) == diff ||  abs(board[j] - board[i]) == 0 {
                 //fmt.Printf(" j=%d - i=%d\n", j, i)
                 //fmt.Printf("board[i]=%d , board[j]=%d, diff=%d\n", board[i], board[j], diff)
                 collisions++
@@ -84,27 +84,27 @@ func generateNewSolution(board []int) []int {
 }
 
 func updateTemperature(t float64) float64{
-    new_t := 0.8 * t
+    new_t := 0.9 * t
     return new_t
 }
 
 func main() {
     rand.Seed(time.Now().Unix())
-    N := 6
+    N := 8
     board := initialSolution(N)
     optimal_board := board
 
     //var temperature float64 = 100.0/float64(N)
-    //var temperature float64 = (float64(N)*99)
-    var temperature float64 = 1000000000
+    var temperature float64 = (float64(N)*31250000)
+    //var temperature float64 = 10000
 
     fmt.Println(temperature)
     printBoard(board)
 
     fmt.Println("energy: ", calculateEnergy(board))
 
-    //L := (N/2)-1
-    L := 1
+    L := (N/2)-1
+    //L := 1
     //L := int(temperature) + 3
     iterations := 0
 
@@ -125,7 +125,7 @@ func main() {
 
                 //fmt.Println("collisions: ", calculateEnergy(board))
                 if calculateEnergy(newBoard) < calculateEnergy(optimal_board) {
-                    optimal_board = newBoard
+                    copy(optimal_board, newBoard)
                 }
             } else if(randomNumber <= probability) {
                 board = newBoard
