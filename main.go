@@ -5,6 +5,8 @@ import (
     "time"
     "math"
     "math/rand"
+    "io"
+    "os"
 )
 
 func abs(x int) int {
@@ -22,8 +24,37 @@ func initialSolution(n int) []int{
 
     board := make([]int, n)
     for i:= 0; i<n; i++ {
-        board[i] = rand.Intn(n)
+        board[i] = i
     }
+    return board
+}
+
+func readInitialSolutionFromFile() []int{
+    file, err := os.Open("initial_solution.txt")
+
+        if err != nil {
+            fmt.Println(err)
+            os.Exit(1)
+        }
+
+        var perline int
+        var board []int
+
+        for {
+            _, err := fmt.Fscanf(file, "%d", &perline)
+
+            if err != nil {
+
+                    if err == io.EOF {
+                        break
+                    }
+                    fmt.Println(err)
+                    os.Exit(1)
+            }
+
+            board = append(board, perline)
+        }
+
     return board
 }
 
@@ -49,16 +80,11 @@ func calculateEnergy(board []int) float64 {
 
     collisions := 0.0
     for i:=0; i < board_len; i++ {
-        //fmt.Println(i, " iteration")
         for j:=i+1; j < board_len; j++ {
-            diff := j - i
-            //if board[j] == abs(diff - board[i]) || board[j] == abs(diff + board[i]) {
-            if abs(board[j] - board[i]) == diff ||  abs(board[j] - board[i]) == 0 {
-                //fmt.Printf(" j=%d - i=%d\n", j, i)
-                //fmt.Printf("board[i]=%d , board[j]=%d, diff=%d\n", board[i], board[j], diff)
+            diff_row := j - i
+            diff_col := abs(board[j] - board[i])
+            if diff_col == diff_row ||  diff_col == 0 {
                 collisions++
-            } else {
-                //fmt.Printf("not match i=%d , j=%d, diff=%d\n", board[i], board[j], diff)
             }
         }
     }
@@ -73,7 +99,6 @@ func generateNewSolution(board []int) []int {
     y := rand.Intn(board_len)
 
     for x == y {
-        x = rand.Intn(board_len)
         y = rand.Intn(board_len)
     }
 
@@ -84,65 +109,60 @@ func generateNewSolution(board []int) []int {
 }
 
 func updateTemperature(t float64) float64{
-    new_t := 0.9 * t
+    new_t := 0.97 * t
     return new_t
 }
 
+func updateTemperature2(t float64) float64{
+    new_t := t/(1 + 0.8*t)
+    return new_t
+}
+
+
 func main() {
     rand.Seed(time.Now().Unix())
-    N := 8
-    board := initialSolution(N)
+    board := readInitialSolutionFromFile()
+    N := len(board)
     optimal_board := board
+    optimal_iter := 0
 
-    //var temperature float64 = 100.0/float64(N)
-    var temperature float64 = (float64(N)*31250000)
-    //var temperature float64 = 10000
-
-    fmt.Println(temperature)
+    //var temperature float64 = float64(N)*2.15/30
+    //var temperature float64 = 1000
+    var temperature float64 = float64(N)*6
+    fmt.Println("Initial Temperature: ", temperature)
+    fmt.Println("Initial Board")
     printBoard(board)
 
     fmt.Println("energy: ", calculateEnergy(board))
 
     L := (N/2)-1
     //L := 1
-    //L := int(temperature) + 3
     iterations := 0
 
-    for temperature > 0.001 {
+    for temperature > 0.01 {
         for i:=0; i<L; i++ {
-            fmt.Println("Generate New Solution")
-
             newBoard := generateNewSolution(board)
-
             delta := calculateEnergy(newBoard) - calculateEnergy(board)
             probability := math.Exp(-delta/temperature)
             randomNumber := rand.Float64()
-            //fmt.Println("probability rand ", probability)
-            //fmt.Println("float64 rand ", randomNumber)
             if delta < 0 {
                 board = newBoard
-                //printBoard(board)
-
-                //fmt.Println("collisions: ", calculateEnergy(board))
                 if calculateEnergy(newBoard) < calculateEnergy(optimal_board) {
                     copy(optimal_board, newBoard)
+                    optimal_iter = iterations
                 }
-            } else if(randomNumber <= probability) {
+            } else if(randomNumber < probability) {
                 board = newBoard
-                //printBoard(board)
             }
             iterations++
         }
         temperature = updateTemperature(temperature)
-        //L = int(temperature) + 3
     }
 
     printBoard(optimal_board)
-    fmt.Println("energy: ", calculateEnergy(optimal_board))
-    fmt.Println("temperature: ", temperature)
-    if temperature <= 0.001 {
-        fmt.Printf("underflow temperature: %.10f\n", temperature)
-    }
+    fmt.Println("Final Energy: ", calculateEnergy(optimal_board))
+    fmt.Println("Final Temperature: ", temperature)
+    fmt.Println("Found at ", optimal_iter, "th iteration")
     fmt.Println("Total of ", iterations, " iterations")
 
 }
