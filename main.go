@@ -102,7 +102,7 @@ func generateNewSolution(board []int) []int {
         y = rand.Intn(board_len)
     }
 
-    fmt.Println("rand", x, y)
+    //fmt.Println("rand", x, y)
     newBoard[x], newBoard[y] = newBoard[y], newBoard[x]
 
     return newBoard
@@ -113,12 +113,6 @@ func updateTemperature(t float64) float64{
     return new_t
 }
 
-func updateTemperature2(t float64) float64{
-    new_t := t/(1 + 0.8*t)
-    return new_t
-}
-
-
 func main() {
     rand.Seed(time.Now().Unix())
     board := readInitialSolutionFromFile()
@@ -126,19 +120,18 @@ func main() {
     optimal_board := board
     optimal_iter := 0
 
-    //var temperature float64 = float64(N)*2.15/30
-    //var temperature float64 = 1000
+
     var temperature float64 = float64(N)*6
-    fmt.Println("Initial Temperature: ", temperature)
     fmt.Println("Initial Board")
     printBoard(board)
-
-    fmt.Println("energy: ", calculateEnergy(board))
+    fmt.Println("Initial Energy: ", calculateEnergy(board))
+    fmt.Println("Initial Temperature: ", temperature)
+    fmt.Println()
 
     L := (N/2)-1
-    //L := 1
     iterations := 0
 
+    start := time.Now()
     for temperature > 0.01 {
         for i:=0; i<L; i++ {
             newBoard := generateNewSolution(board)
@@ -159,10 +152,12 @@ func main() {
         temperature = updateTemperature(temperature)
     }
 
+    fmt.Println("Optimal Board")
     printBoard(optimal_board)
     fmt.Println("Final Energy: ", calculateEnergy(optimal_board))
     fmt.Println("Final Temperature: ", temperature)
     fmt.Println("Found at ", optimal_iter, "th iteration")
-    fmt.Println("Total of ", iterations, " iterations")
+    elapsed := time.Since(start)
+    fmt.Printf("Binomial took %s\n", elapsed)
 
 }
